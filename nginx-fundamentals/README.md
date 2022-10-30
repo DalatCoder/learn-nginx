@@ -44,6 +44,8 @@ Configuration
 - `docker run --name ubuntu -p 8000:80 -d ubuntu:18.04`
 - `docker exec -it ubuntu /bin/bash`
 
+- Using docker images with `systemd` enable: [https://hub.docker.com/r/jrei/systemd-ubuntu](https://hub.docker.com/r/jrei/systemd-ubuntu)
+
 ### Installing via a Package manager
 
 Overview:
@@ -106,6 +108,50 @@ Check if we successfully install `nginx`
 - Navigate to `http://127.0.0.1:8000`
 
 - See all bundle modules at: [http://nginx.org/en/docs/](http://nginx.org/en/docs/)@module references
+
+### Adding an Nginx service
+
+- Using `systemd` service
+
+  - [Learn more](https://www.freedesktop.org/wiki/Software/systemd/)
+  - `ubuntu 15.04`
+  - `centos 7.0`
+  - start, stop & restart
+  - reload (configuration)
+  - start on boot
+
+- Using standard `nginx commandline tool`
+
+  - Check processes: `ps aux | grep nginx`
+  - Send stop signal: `nginx -s stop`
+
+- Enable `systemd` service
+
+  - [Script](https://www.nginx.com/resources/wiki/start/topics/examples/systemd/)
+  - `touch /lib/systemd/system/nginx.service`
+  - Paste the script content
+
+  - ```service
+    [Unit]
+    Description=The NGINX HTTP and reverse proxy server
+    After=syslog.target network-online.target remote-fs.target nss-lookup.target
+    Wants=network-online.target
+
+    [Service]
+    Type=forking
+    PIDFile=/var/run/nginx.pid
+    ExecStartPre=/usr/bin/nginx -t
+    ExecStart=/usr/bin/nginx
+    ExecReload=/usr/bin/nginx -s reload
+    ExecStop=/bin/kill -s QUIT $MAINPID
+    PrivateTmp=true
+
+    [Install]
+    WantedBy=multi-user.target
+    ```
+
+- Start: `systemctl start nginx`
+- Start `nginx` on `boot`: `systemctl enable nginx`
 
 ## Configuration
 
