@@ -14,6 +14,7 @@ Nginx vs Apache
 Apache:
 
 - Prefork mode: spawns several processes, each can serve a single request at a time such as PHP request, images, videos,...
+- Limit by pre-config number of processes (concurrency)
 
 Nginx:
 
@@ -22,6 +23,7 @@ Nginx:
 - Dynamic content must be dealt with by a completely separate process like `PHP FPM` and then reverse proxy
   back to the client via `Nginx`
 - `Nginx` can serve static resource without `PHP` ever knowing about it.
+- Limit by system resources (concurrency)
 
 Nginx is faster than Apache
 
