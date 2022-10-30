@@ -37,6 +37,32 @@ Configuration
 
 ## Installation
 
+### Prepare ubuntu server
+
+- Via `docker`
+- `docker pull ubuntu:18.04`
+- `docker run --name ubuntu -p 8000:80 -d ubuntu:18.04`
+- `docker exec -it ubuntu /bin/bash`
+
+## Installing via a Package manager
+
+Overview:
+
+- Quick & easy solution
+- Limited install options
+- No support for additional modules
+
+> Suitable for the most basic web servers or testing & development
+
+Install via `apt`
+
+- `apt-get update`
+- `apt-get install nginx`
+
+Check if we successfully install `nginx`
+
+- `ps aux | grep nginx`
+
 ## Configuration
 
 ## Performance
