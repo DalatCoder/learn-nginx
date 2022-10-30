@@ -182,6 +182,81 @@ Other important context includes:
 - `server`: define a `virtual host` (similiar to `Apache` v-host)
 - `location`: for matching `URI` location on incomming requests to the parent server context
 
+### Creating a virtual host
+
+We will create a basic `virtual host` to serve static files from a directory on our server.
+
+Overview:
+
+- Create folder `/sites/demo` on our server
+- Folder structure:
+  - `index.html`
+  - `thumb.png`
+  - `styles.css`
+  - `script.js`
+
+Open the configuration file at `/etc/nginx/nginx.conf` and delete all content.
+
+Start configuring from scratch
+
+```conf
+events { }
+
+include mime.types;
+
+http {
+    server {
+        listen 80;
+        server_name localhost;
+
+        root /sites/demo;
+    }
+}
+```
+
+Define a `virtual host`, each virtual host being a new server `context` (or server `block`)
+
+Server context responsible for:
+
+- listening requests on a port (typically `80` for `http` and `443` for `https`)
+- `server_name`: domain, subdomain or an `ip` address
+- `root`: the root path. For example, if we request url is `/images/cat.png`, `nginx` will
+  look for that images at `/root/path/images/cat.png`. In our demo example, the `root` path
+  will be `/sites/demo`
+
+Reload the `nginx` configuration:
+
+- Verify the configuration file: `nginx -t`
+- Reload nginx: `systemctl reload nginx`
+- Head over to `localhost:8000` (mapping port `8000:80` when running `docker container`)
+
+Correct the `MIME type`, we need to provide `nginx` with content types for
+given file extensions. We can do this by using a new `context` called `types`.
+Each `entry` include `MINEtype` and the corresponding `extension`
+
+```conf
+http {
+    ...
+
+    types {
+        text/html html;
+        text/css css;
+        text/javascript js;
+    }
+}
+```
+
+The easy way is to include the `mime.types` from `/etc/nginx/` folder
+
+```conf
+http {
+    // relative to the current configuration file
+    include mime.types;
+}
+```
+
+> Disable cache on the browser to load new content each time we reload the nginx server.
+
 ## Performance
 
 ## Security
