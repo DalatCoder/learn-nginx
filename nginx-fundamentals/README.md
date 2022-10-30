@@ -94,7 +94,7 @@ Check if we successfully install `nginx`
   - SSL
 
   - 2 forms:
-    - `bundle modules`pt lib l/-et-/v---
+    - `bundle modules`
     - `3rd-party modules`
 
 - Compile source: `make`
