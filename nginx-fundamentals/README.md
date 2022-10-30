@@ -257,6 +257,74 @@ http {
 
 > Disable cache on the browser to load new content each time we reload the nginx server.
 
+### Location context (Location block)
+
+This is the most used context in any `nginx` configuration. This is where we define
+and configure the specific behavior of an `URI`.
+
+```conf
+server {
+    location uri {
+
+    }
+}
+```
+
+Think of `location block` as `intercepting` a request based on its value (`uri`), and then doing
+something other than just trying to serve a matching file `relative` to the `root` directory.
+
+```conf
+events { }
+
+include mime.types;
+
+http {
+    server {
+        listen 80;
+        server_name localhost;
+
+        root /sites/demo;
+
+        location /greeting {
+            return 200 "Hello world from nginx /greeting location";
+        }
+    }
+}
+```
+
+- Define `location block` that takes an `argument` for the `URI`
+- Inside the block, we can now:
+  - Response
+  - Redirect
+  - Do whatever else we need to do with this request and essentially manipulate the response
+
+For example, we can return a `text string`.
+
+```conf
+location /greeting {
+    return 200 "Hello world from nginx /greeting location";
+}
+```
+
+There are several ways of matching `URI` in the `location` block.
+
+- Prefix match `location /greeting`, it matches all `URL` starting with `/greeting` such as `/greeting/hieu` or `/greeting/ha`,...
+- Exact match `location = /greeting` (the `=` is called the `modifier`)
+- Regex match (from the `pcre` library that we have installed already)
+
+  - `location ~ /greeing[0-9]`, it matches all routes like `/greeting1`, `/greeting2`, ... `/greeting9`
+  - `~` modifier is `case sensitive`, so if we head over to `/GREETING1`, we will get the `404 page`
+  - `~*` modifier is `case insensitive`
+
+- Preferential prefix using `^~` modifier, the same as basic `prefix match`, but higher `priority` than `regex` match.
+
+Match modifier priority:
+
+- Exact `=`
+- Preferential prefix `^~`
+- Regex `~*`
+- Prefix `/`
+
 ## Performance
 
 ## Security
