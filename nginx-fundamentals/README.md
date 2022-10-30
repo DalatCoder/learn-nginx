@@ -155,6 +155,33 @@ Check if we successfully install `nginx`
 
 ## Configuration
 
+### Terms
+
+The most important terms:
+
+- Context
+- Directive
+
+Directive is a specific configuration option that get set in the configuration
+files and consist of a name and a value:
+
+- `server_name mydomain.com`
+
+Context is section within the configuration file where directives can be set for that
+given context.
+
+Essentially, context is the same as scope.
+
+Context are also nested and inherit from their parents with the top most
+context simply being the `configuration` file itself. This is call the `main context`
+and is where we configure `global directive` that apply to the `master` process.
+
+Other important context includes:
+
+- `http`: anything `HTTP` related
+- `server`: define a `virtual host` (similiar to `Apache` v-host)
+- `location`: for matching `URI` location on incomming requests to the parent server context
+
 ## Performance
 
 ## Security
