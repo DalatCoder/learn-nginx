@@ -18,6 +18,7 @@
     - [3.6. Try Files & Named locations](#36-try-files--named-locations)
     - [3.7. Logging](#37-logging)
     - [Inhteritance & Directive types](#inhteritance--directive-types)
+    - [PHP Processing](#php-processing)
   - [4. Performance](#4-performance)
   - [5. Security](#5-security)
   - [6. Reverse Proxy & Load Balancing](#6-reverse-proxy--load-balancing)
@@ -685,8 +686,104 @@ http {
     }
   }
 }
-
 ```
+
+### PHP Processing
+
+Up to now, we've dealt with and configured `nginx` to server static files of
+various types, leaving the rendering of that file to be handled by the client
+or browser based on its content type or mime type.
+
+A critical part of most Web servers is the ability to serve dynamic content
+that's been generated from a server side language such as PHP.
+
+Nginx isn't able to embed its server side language processes. So instead, we'll
+configure a standalone service, named `PHP-fpm`, to which `nginx` will pass the
+`request` for processing. And then upon receiving the response, typically as
+HTML, return that to the client.
+
+This is essentially `nginx` functioning as a `reverse proxy server`, one of its
+strong points.
+
+![Image](assets/image1.png)
+
+Install `php-fpm` service
+
+- `apt-get update`
+- `apt-get install php-fpm`
+- check service by using: `systemctl list-units | grep php`
+- start the service: `systemctl start php7.2-fpm.service`
+- start on boot: `systemctl enable php7.2-fpm.service`
+- check status: `systemctl status php7.2-fpm`
+  - 1 master process
+  - 2 workers
+
+Configure the request passing in our `nginx.conf`
+
+- `index` directive: tells nginx which file to load if the request point to a `directory` (the default value is `index.html`)
+- we override `index` to first load `index.php` if exists
+- declare prefix match `/` for taking care of any `static contents`
+
+  - try load the file match `$uri`
+  - try load the file match `$uri/` (in case user type the `directory` in `URL`)
+  - if none of these exists, we `rewrite` to the default nginx `404`
+
+- declare regex match `~` (take priority than `/`), we can match anything ending in `PHP` in order to pass it to `fpm` service
+
+  - include some `fastcgi` default configurations
+  - pass requests to `php-fpm service` by using `unix socket` and `fastcgi protocol` with `pastcgi_pass` directive.
+  - `socket`: `fpm-service` and `nginx service` can `listen` and `push` data.
+  - search for the `php-fpm socket` location: `find / -name *fpm.sock`emit
+
+Create a PHP file called `info.php` in `/sites/demo` and head over to `localhost:8000/info.php`. We will get the
+error `502 bad gateway`. We can view `error.log` for more information.
+
+Check the last line of `error.log` by using `tail -n 1 /var/log/nginx/error.log`
+
+The error is `permission denied`, we can find the reason by
+
+- `ps aux | grep nginx`: user `nobody`
+- `ps aux | grep php`: user `www-data`
+
+To solve the problem, we can configure `nginx` to run as the same user as the `php-fpm` by using `user www-data` on
+the `main context`
+
+```conf
+user www-data;
+
+events {}
+http {
+    include mime.types;
+
+    server {
+        listen 80;
+        server_name localhost;
+
+        root /sites/demo;
+
+        # first load the index.php
+        index index.php index.html;
+
+        # prefix match for everything
+        location / {
+            try_files $uri $uri/ =404;
+        }
+
+        # regex match for passing php to fpm service
+        location ~\.php$ {
+            # pass php requests to the php-fpm service (via fastcgi protocol)
+            include fastcgi.conf;
+            fastcgi_pass unix:/run/php/php7.2-fpm.sock;
+        }
+    }
+}
+```
+
+FastCGI is a protocol, likes HTTP for transferring `binary data`. This is how `nginx` can
+communicate with `php-fpm`. We could have done this using the standard `HTTP` protocol also.  
+But FastCGI is faster.
+
+[Learn more](https://www.digitalocean.com/community/tutorials/understanding-and-implementing-fastcgi-proxying-in-nginx)
 
 ## 4. Performance
 
