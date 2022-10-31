@@ -325,6 +325,52 @@ Match modifier priority:
 - Regex `~*`
 - Prefix `/`
 
+### Variables
+
+Variables exist in 2 forms:
+
+- Configuration variables: we set ourself: `set $var 'something'`
+- NGINX module varialbes `$http, $uri, $args`
+
+[Learn more about NGINX module variables](http://nginx.org/en/docs/varindex.html)
+
+- `$host`: current host
+- `$uri`: current request path
+- `$args`: params
+- `/post?user=hieu&age=20`:
+  - `$arg_user`: `hieu`
+  - `$arg_age`: `20`
+
+```conf
+events {}
+http {
+    include mime.types;
+
+    server {
+        listen 80;
+        server_name localhost;
+
+        root /sites/demo;
+
+        location /inspect {
+            return 200 "$host $uir $args";
+        }
+    }
+}
+```
+
+Create local variable
+
+```conf
+set $name = 'hieu';
+
+if ( $name ~ 'ha' ) {
+    set $name = 'ha'
+}
+```
+
+[If is evil when used in location context](https://www.nginx.com/resources/wiki/start/topics/depth/ifisevil/)
+
 ## Performance
 
 ## Security
