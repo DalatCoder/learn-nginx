@@ -371,6 +371,85 @@ if ( $name ~ 'ha' ) {
 
 [If is evil when used in location context](https://www.nginx.com/resources/wiki/start/topics/depth/ifisevil/)
 
+### Rewrite & Redirect
+
+> Rewrite or simply redirect in some cases.
+
+There are 2 directives that we can use for rewritting requests:
+
+- `rewrite pattern URI`
+- `return status URI`
+
+We use `return` directive for responsing some data to the client.
+However, when the `status` is `3xx`, the second parameter accept
+an `URI` for path.
+
+Using `return` directive:
+
+```conf
+events {}
+http {
+    server {
+        # ...
+        location /logo {
+            return 307 /thumb.jpg;
+        }
+    }
+}
+```
+
+- `307`: temporary redirect
+- when we head over to `/logo`, we get the `/thumb.jpg` image
+- the `URL` also `changed` to `/thumb.jpg` (**the main different between rewrite and redirect**)
+
+A redirect simply tells the client performing the request where to go instead.
+
+A rewrite, on the other hand, mutate the `URI` internally
+
+Using `rewrite` directive:
+
+```conf
+events {}
+http {
+    server {
+        # ...
+        rewrite ^/user/(\w+) /greet/$1;
+
+        location /logo {
+            return 307 /thumb.jpg;
+        }
+
+        location /greet {
+            return 200 "Hello user";
+        }
+
+        location = /greet/hieu {
+            return 200 "Hello Hieu";
+        }
+    }
+}
+```
+
+- When `URL` is rewritten, it also gets re-evaluated by `nginx` as a `completely new request`
+- The re-evaluation makes rewrite very powerful, but also requires more system resources.
+- When we head over to `/user/hieu`, we get `"Hello user"`, the `URL` is rewritten internally,
+  unbeknownst to the client
+- We can capture certain parts of the `URI` when `rewrite` by using standard `regex capture group`
+
+Provide `last` `flag` when using `rewrite`
+
+```conf
+rewrite ^/user/(\w+) /greet/$1;
+rewrite /greet/hieu /thumb.jpg;
+```
+
+When we access `user/hieu`, we will get the `/thumb.jpg`. To prevent that, we could use
+
+```conf
+rewrite ^/user/(\w+) /greet/$1 last;
+rewrite /greet/hieu /thumb.jpg;
+```
+
 ## Performance
 
 ## Security
