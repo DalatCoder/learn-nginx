@@ -22,9 +22,9 @@
     - [3.10. Worker Processes](#310-worker-processes)
     - [3.11. Buffers & Timeouts](#311-buffers--timeouts)
   - [4. Performance](#4-performance)
-    - [Headers & Expires](#headers--expires)
-    - [Compressed responses with gzip](#compressed-responses-with-gzip)
-    - [FastCGI Cache (Micro Cache)](#fastcgi-cache-micro-cache)
+    - [4.1. Headers & Expires](#41-headers--expires)
+    - [4.2. Compressed responses with gzip](#42-compressed-responses-with-gzip)
+    - [4.3. FastCGI Cache (Micro Cache)](#43-fastcgi-cache-micro-cache)
   - [5. Security](#5-security)
   - [6. Reverse Proxy & Load Balancing](#6-reverse-proxy--load-balancing)
 
@@ -968,7 +968,7 @@ the need to be timed out or rejected.
 
 ## 4. Performance
 
-### Headers & Expires
+### 4.1. Headers & Expires
 
 Sample expires header: `Expires Fire, 15 Jun 2018 21:33:22 GMT`
 
@@ -1017,7 +1017,7 @@ http {
 }
 ```
 
-### Compressed responses with gzip
+### 4.2. Compressed responses with gzip
 
 When a client requests a resource, typically a static file
 such as Javascript or CSS, that client can indicate its ability
@@ -1069,7 +1069,7 @@ To test:
 - `curl -I http://localhost:8000/style.css`: raw file (no compression)
 - `curl -I -H "Accept-Encoding: gzip" http://localhost:8000/style.css`: compressed file (the client willing to accept the `gzip` file by adding the `Accept-Encoding: gzip` to its request header)
 
-### FastCGI Cache (Micro Cache)
+### 4.3. FastCGI Cache (Micro Cache)
 
 An `nginx` micro cache is a simple server side cache that allows
 us to store dynamic language responses in order to avoid or at
