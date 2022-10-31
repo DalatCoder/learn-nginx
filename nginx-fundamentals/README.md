@@ -17,8 +17,8 @@
     - [3.5. Rewrite & Redirect](#35-rewrite--redirect)
     - [3.6. Try Files & Named locations](#36-try-files--named-locations)
     - [3.7. Logging](#37-logging)
-    - [Inhteritance & Directive types](#inhteritance--directive-types)
-    - [PHP Processing](#php-processing)
+    - [3.8. Inhteritance & Directive types](#38-inhteritance--directive-types)
+    - [3.9. PHP Processing](#39-php-processing)
   - [4. Performance](#4-performance)
   - [5. Security](#5-security)
   - [6. Reverse Proxy & Load Balancing](#6-reverse-proxy--load-balancing)
@@ -608,7 +608,7 @@ http {
 }
 ```
 
-### Inhteritance & Directive types
+### 3.8. Inhteritance & Directive types
 
 As with `scope` in programming languages, an `nginx` context inherits configurations from its parent contexts.
 
@@ -688,7 +688,7 @@ http {
 }
 ```
 
-### PHP Processing
+### 3.9. PHP Processing
 
 Up to now, we've dealt with and configured `nginx` to server static files of
 various types, leaving the rendering of that file to be handled by the client
