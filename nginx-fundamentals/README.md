@@ -24,6 +24,7 @@
   - [4. Performance](#4-performance)
     - [Headers & Expires](#headers--expires)
     - [Compressed responses with gzip](#compressed-responses-with-gzip)
+    - [FastCGI Cache (Micro Cache)](#fastcgi-cache-micro-cache)
   - [5. Security](#5-security)
   - [6. Reverse Proxy & Load Balancing](#6-reverse-proxy--load-balancing)
 
@@ -1067,6 +1068,180 @@ To test:
 
 - `curl -I http://localhost:8000/style.css`: raw file (no compression)
 - `curl -I -H "Accept-Encoding: gzip" http://localhost:8000/style.css`: compressed file (the client willing to accept the `gzip` file by adding the `Accept-Encoding: gzip` to its request header)
+
+### FastCGI Cache (Micro Cache)
+
+An `nginx` micro cache is a simple server side cache that allows
+us to store dynamic language responses in order to avoid or at
+least minimize server side language processing for websites relying
+heavily on server side languages and database access.
+
+Simply put, let's say a user makes a request for dynamic content.
+Nginx passes that request to `fpm`, which processes it and possibly
+even include some database queries. `php-fpm` then returns that
+processed response to `nginx`, most likely in the form of `HTML`.
+At which point nginx using a `micro cache` can write that response
+to disk. Meaning next time a user makes the same request, there's no
+need at all to even contact `fpm`. The response can be read from disk.
+
+- `fastcgi_cache_path`: file system location to which these
+  cache entries can be written. Using `/tmp` for this because
+  this directory gets empty on boot for most `Linux` distribution.
+
+  - `tmp`
+  - `levels=1:2`: the depth of directories to split the cache
+    entries into.
+
+    ![Image](assets/image3.png)
+
+    - `keys_zone=ZONE_1:100m`: the name of this cache and its size `100m`
+    - `inactive=60m`: how long to keep a cache entry after the last time it's accessed.
+
+- `fastcgi_cache_key`: a standard directive that takes a string
+  format from which to create cache entries.
+  - common format: `"$scheme$request_method$host$request_uri"`, a
+    cache entry will be identified by this format.
+  - this string format will be hashed using `MD5` algorithm to
+    create the entry name (see above image)
+
+Then, we have to implement where we want dynamic content to be cached.
+
+- `fastcgi_cache ZONE_1` to enable caching
+- `fastcgi_cache_valid 200 60m` how long the cache be valid to specific status code
+
+```conf
+user www-data;
+
+worker_processes auto;
+
+events {
+    worker_connection 1024;
+}
+
+http {
+    include mime.types;
+
+    # configure microcache (fastcgi)
+    fastcgi_cache_path /tmp/nginx_cache levels=1:2 keys_zone=ZONE_1:100m inactive=60m;
+    fastcgi_cache_key "$scheme$request_method$host$request_uri";
+
+    # check whether the request is served from cache
+    add_header X-Cache $upstream_cache_status;
+
+    server {
+        listen 80;
+        server_name localhost;
+
+        root /sites/demo;
+
+        index index.php index.html;
+
+        location / {
+            try_files $uri $uri/ =404;
+        }
+
+        location ~\.php$ {
+            include fastcgi.conf;
+            fastcgi_pass unix:/run/php/php7.2-fpm.sock;
+
+            # Enable cache
+            fastcgi_cache ZONE_1;
+            fastcgi_cache_valid 200 60m;
+        }
+    }
+}
+```
+
+Edit the `index.php` file for testing
+
+```php
+<?php sleep(1); // simulate sql query timing ?>
+<?php echo phpinfo(); ?>
+```
+
+Test the server performance using `HTTP server benchmarking tool`
+
+- using `Apache Bench` tool
+- `apt-get install apache2-utils`
+- run `ab` command to get helps
+- create `100 requests` by `10 concurrent connections` or `10 connection at a time x 10 times = 100 requests`
+
+Testing with no-caching
+
+- `ab -n 100 -c 10 http://127.0.0.1/`:
+- total time: `21.242s`
+- requests per second: `4.71`
+
+Testing with micro-caching
+
+- `ab -n 100 -c 10 http://127.0.0.1/`:
+- total time: `3.023s`
+- requests per second: `33.08`
+
+We can know whether the request is cached by using the variable
+`$upstream_cache_status`
+
+- `add_header X-Cache $upstream_cache_status;`
+  - `X` being a naming convention for custom headers
+  - `HIT`: served from cache
+  - `bypass`: by pass the cache (force to get new content)
+  - `MISS`: no cache
+
+Adding cache exceptions
+
+```conf
+user www-data;
+
+worker_processes auto;
+
+events {
+    worker_connection 1024;
+}
+
+http {
+    include mime.types;
+
+    # configure microcache (fastcgi)
+    fastcgi_cache_path /tmp/nginx_cache levels=1:2 keys_zone=ZONE_1:100m inactive=60m;
+    fastcgi_cache_key "$scheme$request_method$host$request_uri";
+
+    # check whether the request is served from cache
+    add_header X-Cache $upstream_cache_status;
+
+    server {
+        listen 80;
+        server_name localhost;
+
+        root /sites/demo;
+
+        index index.php index.html;
+
+        # cache by default
+        set $no_cache 0;
+
+        # check for cache bypass
+        if ( $arg_skipcache = 1 ) {
+            set $no_cache 1;
+        }
+
+        location / {
+            try_files $uri $uri/ =404;
+        }
+
+        location ~\.php$ {
+            include fastcgi.conf;
+            fastcgi_pass unix:/run/php/php7.2-fpm.sock;
+
+            # Enable cache
+            fastcgi_cache ZONE_1;
+            fastcgi_cache_valid 200 60m;
+
+            fastcgi_cache_bypass $no_cache;
+            $fastcgi_no_cache $no_cache;
+        }
+    }
+}
+```
 
 ## 5. Security
 
