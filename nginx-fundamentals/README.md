@@ -17,6 +17,7 @@
     - [3.5. Rewrite & Redirect](#35-rewrite--redirect)
     - [3.6. Try Files & Named locations](#36-try-files--named-locations)
     - [3.7. Logging](#37-logging)
+    - [Inhteritance & Directive types](#inhteritance--directive-types)
   - [4. Performance](#4-performance)
   - [5. Security](#5-security)
   - [6. Reverse Proxy & Load Balancing](#6-reverse-proxy--load-balancing)
@@ -604,6 +605,87 @@ http {
         }
     }
 }
+```
+
+### Inhteritance & Directive types
+
+As with `scope` in programming languages, an `nginx` context inherits configurations from its parent contexts.
+
+```conf
+server {
+    root /sites/demo;
+
+    location / {
+        # inherit root
+        # root /sites/demo;
+    }
+}
+```
+
+The inheritance isn't always as `scope`, but depends on the type of `directive` being inherited from.
+
+There are 3 main directive types:
+
+- Standard directive
+- Array directive
+- Action directive
+
+```conf
+events {}
+
+######################
+# (1) Array Directive
+######################
+# Can be specified multiple times without overriding a previous setting
+# Gets inherited by all child contexts
+# Child context can override inheritance by re-declaring directive
+access_log /var/log/nginx/access.log;
+access_log /var/log/nginx/custom.log.gz custom_format;
+
+http {
+
+  # Include statement - non directive
+  include mime.types;
+
+  server {
+    listen 80;
+    server_name site1.com;
+
+    # Inherits access_log from parent context (1)
+  }
+
+  server {
+    listen 80;
+    server_name site2.com;
+
+    #########################
+    # (2) Standard Directive
+    #########################
+    # Can only be declared once. A second declaration overrides the first
+    # Gets inherited by all child contexts
+    # Child context can override inheritance by re-declaring directive
+    root /sites/site2;
+
+    # Completely overrides inheritance from (1)
+    access_log off;
+
+    location /images {
+
+      # Uses root directive inherited from (2)
+      try_files $uri /stock.png;
+    }
+
+    location /secret {
+      #######################
+      # (3) Action Directive
+      #######################
+      # Invokes an action such as a rewrite or redirect
+      # Inheritance does not apply as the request is either stopped (redirect/response) or re-evaluated (rewrite)
+      return 403 "You do not have permission to view this.";
+    }
+  }
+}
+
 ```
 
 ## 4. Performance
