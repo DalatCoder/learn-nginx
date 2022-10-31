@@ -20,6 +20,7 @@
     - [3.8. Inhteritance & Directive types](#38-inhteritance--directive-types)
     - [3.9. PHP Processing](#39-php-processing)
     - [Worker Processes](#worker-processes)
+    - [Bufferes & Timeouts](#bufferes--timeouts)
   - [4. Performance](#4-performance)
   - [5. Security](#5-security)
   - [6. Reverse Proxy & Load Balancing](#6-reverse-proxy--load-balancing)
@@ -848,6 +849,119 @@ By setting `worker_connections`, we also have the maximum number
 of concurrent requests that our server should be able to accept:
 
 - `worker_process * worker_connections = max connections`.
+
+### Bufferes & Timeouts
+
+Example conf
+
+```conf
+user www-data;
+
+worker_processes auto;
+
+events {
+  worker_connections 1024;
+}
+
+http {
+
+  include mime.types;
+
+  # Buffer size for POST submissions
+  client_body_buffer_size 10K;
+  client_max_body_size 8m;
+
+  # Buffer size for Headers
+  client_header_buffer_size 1k;
+
+  # Max time to receive client headers/body
+  client_body_timeout 12;
+  client_header_timeout 12;
+
+  # Max time to keep a connection open for
+  keepalive_timeout 15;
+
+  # Max time for the client accept/receive a response
+  send_timeout 10;
+
+  # Skip buffering for static files
+  sendfile on;
+
+  # Optimise sendfile packets
+  tcp_nopush on;
+
+  server {
+
+    listen 80;
+    server_name 167.99.93.26;
+
+    root /sites/demo;
+
+    index index.php index.html;
+
+    location / {
+      try_files $uri $uri/ =404;
+    }
+
+    location ~\.php$ {
+      # Pass php requests to the php-fpm service (fastcgi)
+      include fastcgi.conf;
+      fastcgi_pass unix:/run/php/php7.1-fpm.sock;
+    }
+
+  }
+}
+```
+
+Buffering is when a process or an `nginx` worker reads data into
+`memory` or `RAM` before writing it to its destination.
+
+For example, `nginx` receives a request which it reads from a
+`TCP port`, write that request data to `memory`, which is `buffering`. Or if the `buffer` is too small for the amount of
+data being read, write some of it to `disk`.
+
+The opposite of this, is that `nginx` respond to a request a
+static file, which it reads from `disk` into `memory`, so buffering
+the file and send that data to the client from `memory`.
+
+This happens, as the name implies, to create a `buffer` or `layer`
+of protection between reading and writing of data.
+
+Timeouts simply suggest a cutoff time for a given event.
+
+For example, if receiving a request from a client, stop after a
+certain number of seconds, thus preventing a client from sending an
+endless stream of data and eventually breaking the server.
+
+[Measurement units](http://nginx.org/en/docs/syntax.html)
+
+- `buffer_directive 100` (bytes)
+- `buffer_directive 100k` (kilobytes)
+- `buffer_directive 100m` (megabytes)
+
+- `timeout_directive 30` (milliseconds)
+- `timeout_directive 30s` (seconds)
+- `timeout_directive 30m` (minutes)
+- `timeout_directive 30h` (hours)
+- `timeout_directive 30d` (days)
+
+`keepalive_timeout 15`: this directive sets the amount of time `nginx`
+should keep a connection to a client open for in case more data is
+on the way. This is extremely useful when a client is requesting
+a number of files and keeping a connection open reduces the time
+it takes to open another new connection. Equally not wanting to leave
+connections open for too long as this can result in our `pool of max connections`. (`worker_processes * worker_connections`)
+
+For the most part, there's no reason a connection would have to
+stay open beyond a few milliseconds before continuing. And most clients
+will close connections properly, meaning this timeout won't even
+apply.
+
+`send_file` directive means that read data from the `disk` and
+write it directly to the `response`
+
+Most clients will open and close connections correctly without
+the need to be timed out or rejected.
 
 ## 4. Performance
 
