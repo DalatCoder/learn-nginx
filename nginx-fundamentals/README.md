@@ -2,7 +2,26 @@
 
 [Learn more](https://www.udemy.com/course/nginx-fundamentals/)
 
-## Overview
+- [NGINX Fundamentals: High-Performance Servers from Scratch](#nginx-fundamentals-high-performance-servers-from-scratch)
+  - [1. Overview](#1-overview)
+  - [2. Installation](#2-installation)
+    - [2.1. Prepare ubuntu server](#21-prepare-ubuntu-server)
+    - [2.2. Installing via a Package manager](#22-installing-via-a-package-manager)
+    - [2.3. Building Nginx from source & adding modules](#23-building-nginx-from-source--adding-modules)
+    - [2.4. Adding an Nginx service](#24-adding-an-nginx-service)
+  - [3. Configuration](#3-configuration)
+    - [3.1. Terms](#31-terms)
+    - [3.2. Creating a virtual host](#32-creating-a-virtual-host)
+    - [3.3. Location context (Location block)](#33-location-context-location-block)
+    - [3.4. Variables](#34-variables)
+    - [3.5. Rewrite & Redirect](#35-rewrite--redirect)
+    - [3.6. Try Files & Named locations](#36-try-files--named-locations)
+    - [3.7. Logging](#37-logging)
+  - [4. Performance](#4-performance)
+  - [5. Security](#5-security)
+  - [6. Reverse Proxy & Load Balancing](#6-reverse-proxy--load-balancing)
+
+## 1. Overview
 
 Nginx
 
@@ -35,9 +54,9 @@ Configuration
 - Nginx: URI location first
 - Apache: Filesystem location (`.htaccess` file)
 
-## Installation
+## 2. Installation
 
-### Prepare ubuntu server
+### 2.1. Prepare ubuntu server
 
 - Via `docker`
 - `docker pull ubuntu:18.04`
@@ -46,7 +65,7 @@ Configuration
 
 - Using docker images with `systemd` enable: [https://hub.docker.com/r/jrei/systemd-ubuntu](https://hub.docker.com/r/jrei/systemd-ubuntu)
 
-### Installing via a Package manager
+### 2.2. Installing via a Package manager
 
 Overview:
 
@@ -65,7 +84,7 @@ Check if we successfully install `nginx`
 
 - `ps aux | grep nginx`
 
-### Building Nginx from source & adding modules
+### 2.3. Building Nginx from source & adding modules
 
 - Prepare
 
@@ -109,7 +128,7 @@ Check if we successfully install `nginx`
 
 - See all bundle modules at: [http://nginx.org/en/docs/](http://nginx.org/en/docs/)@module references
 
-### Adding an Nginx service
+### 2.4. Adding an Nginx service
 
 - Using `systemd` service
 
@@ -153,9 +172,9 @@ Check if we successfully install `nginx`
 - Start: `systemctl start nginx`
 - Start `nginx` on `boot`: `systemctl enable nginx`
 
-## Configuration
+## 3. Configuration
 
-### Terms
+### 3.1. Terms
 
 The most important terms:
 
@@ -182,7 +201,7 @@ Other important context includes:
 - `server`: define a `virtual host` (similiar to `Apache` v-host)
 - `location`: for matching `URI` location on incomming requests to the parent server context
 
-### Creating a virtual host
+### 3.2. Creating a virtual host
 
 We will create a basic `virtual host` to serve static files from a directory on our server.
 
@@ -257,7 +276,7 @@ http {
 
 > Disable cache on the browser to load new content each time we reload the nginx server.
 
-### Location context (Location block)
+### 3.3. Location context (Location block)
 
 This is the most used context in any `nginx` configuration. This is where we define
 and configure the specific behavior of an `URI`.
@@ -325,7 +344,7 @@ Match modifier priority:
 - Regex `~*`
 - Prefix `/`
 
-### Variables
+### 3.4. Variables
 
 Variables exist in 2 forms:
 
@@ -371,7 +390,7 @@ if ( $name ~ 'ha' ) {
 
 [If is evil when used in location context](https://www.nginx.com/resources/wiki/start/topics/depth/ifisevil/)
 
-### Rewrite & Redirect
+### 3.5. Rewrite & Redirect
 
 > Rewrite or simply redirect in some cases.
 
@@ -450,7 +469,7 @@ rewrite ^/user/(\w+) /greet/$1 last;
 rewrite /greet/hieu /thumb.jpg;
 ```
 
-### Try Files & Named locations
+### 3.6. Try Files & Named locations
 
 `try_files` directive
 
@@ -530,8 +549,10 @@ http {
 }
 ```
 
-## Performance
+### 3.7. Logging
 
-## Security
+## 4. Performance
 
-## Reverse Proxy & Load Balancing
+## 5. Security
+
+## 6. Reverse Proxy & Load Balancing
