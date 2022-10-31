@@ -19,6 +19,7 @@
     - [3.7. Logging](#37-logging)
     - [3.8. Inhteritance & Directive types](#38-inhteritance--directive-types)
     - [3.9. PHP Processing](#39-php-processing)
+    - [Worker Processes](#worker-processes)
   - [4. Performance](#4-performance)
   - [5. Security](#5-security)
   - [6. Reverse Proxy & Load Balancing](#6-reverse-proxy--load-balancing)
@@ -784,6 +785,69 @@ communicate with `php-fpm`. We could have done this using the standard `HTTP` pr
 But FastCGI is faster.
 
 [Learn more](https://www.digitalocean.com/community/tutorials/understanding-and-implementing-fastcgi-proxying-in-nginx)
+
+### Worker Processes
+
+When execute the command `ps aux | grep nginx`, we will see 2 processes:
+
+- Master process
+- Worker process
+
+`Master process` is the actual `nginx` service or `software instance`. The `master process` spawns
+worker processes, which listen for and respond to client requests.
+The default number of worker processes in `nginx` is being `1`.
+
+We can use `worker_processes` to change the number of `worker process`. In the `main context`, we
+can set this `directive` as follow:
+
+```conf
+work_processes 2;
+```
+
+Increasing the number of workers engines spawned doesn't equal
+to better performance.
+
+The nginx worker processes handle requests asynchronously, meaning
+they will handle incoming requests as fast as the hardware is
+capable of. And creating a second worker process simply does not
+increase the hardware's ability.
+
+`CPU` cores cannot share the running processes, meaning that only
+1 worker process can only ever run on a single CPU core. So that, if
+the server have `n` `CPU` core, we can configure `nginx` to have `n`
+`worker process`, each `worker process` running on each `core`.
+
+To known the number of core:
+
+- `nproc`
+- `lscpu`
+
+We can set `worker_process` to match the number of `CPU cores`.
+
+Nginx also gives us a very simple way of automating this by
+simply setting `worker_process` to `auto`
+
+```conf
+worker_process 16;
+```
+
+To set the `number of connection` each `worker` process can accept, we set the directive `worker_connections`in`events` context.
+
+To find the number of `worker_connections`, we can use the command
+`ulimit -n`
+
+```conf
+worker_process 16;
+
+events {
+    worker_connections 1024;
+}
+```
+
+By setting `worker_connections`, we also have the maximum number
+of concurrent requests that our server should be able to accept:
+
+- `worker_process * worker_connections = max connections`.
 
 ## 4. Performance
 
