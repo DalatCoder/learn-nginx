@@ -551,6 +551,61 @@ http {
 
 ### 3.7. Logging
 
+Nginx provides 2 log types:
+
+- error log
+
+  - anything that failed
+  - anything that didn't happen as expected
+
+- access log: log all requests to the server
+
+> Logging is enable by default
+
+When compile `nginx`, we have setup the log path at: `/var/log/nginx`
+
+We can also create `custom log` or `disable logging` for a `given context` by using the directives:
+
+- `access_log`
+- `error_log`
+
+```conf
+events {}
+http {
+    server {
+        listen 80;
+        server_name localhost;
+
+        root /sites/demo;
+
+        location /secure {
+            access_log /var/log/nginx/secure.access.log;
+            return 200 "Welcome to secure area";
+        }
+    }
+}
+```
+
+Another common use of the `log` directive is to disable logging for certain requests.
+By doing so, we can reduce server load and keep log file simple.
+
+```conf
+events {}
+http {
+    server {
+        listen 80;
+        server_name localhost;
+
+        root /sites/demo;
+
+        location /secure {
+            access_log off;
+            return 200 "Welcome to secure area";
+        }
+    }
+}
+```
+
 ## 4. Performance
 
 ## 5. Security
