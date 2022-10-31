@@ -22,6 +22,7 @@
     - [3.10. Worker Processes](#310-worker-processes)
     - [3.11. Buffers & Timeouts](#311-buffers--timeouts)
   - [4. Performance](#4-performance)
+    - [Headers & Expires](#headers--expires)
   - [5. Security](#5-security)
   - [6. Reverse Proxy & Load Balancing](#6-reverse-proxy--load-balancing)
 
@@ -964,6 +965,55 @@ Most clients will open and close connections correctly without
 the need to be timed out or rejected.
 
 ## 4. Performance
+
+### Headers & Expires
+
+Sample expires header: `Expires Fire, 15 Jun 2018 21:33:22 GMT`
+
+Expires headers, they're essentially a response header informing the
+client or browser how long ti can `cache` that response for.
+
+For example, let's say we have an image on our website, that image
+data isn't realistically going to change all that often, meaning
+we can tell the browser to `cache` a copy of the image for a
+relatively long time, and in doing so, avoid any future requests
+for that image. Another resource like a stylesheet, however, which
+could change more frequently. We could set to a shorter time, but
+still have the browser cache it.
+
+To configure caching:
+
+- `add_header Cache-Control public;`: let client caches the request
+- `add_header Pragma public;`: the older version of `Cache-Control`
+- `expires 60m;`: `expires` directive allows us to set the cache
+  duration using standard `nginx` time measurement. This directive
+  will add 2 more headers to the response:
+  - `Expires`
+  - `Cache-Control: max-age=xxx`: number of seconds
+
+```conf
+events {}
+http {
+    server {
+        ...
+
+        location = /thumb.jpg {
+            add_header Cache-Control public;
+            add_header Pragma public;
+            add_header Vary Accept-Encoding;
+            expires 10m;
+        }
+
+        location ~* \.(css|js|jpg|png)$ {
+            access_log off;
+            add_header Cache-Control public;
+            add_header Pragma public;
+            add_header Vary Accept-Encoding;
+            expires 10m;
+        }
+    }
+}
+```
 
 ## 5. Security
 
