@@ -23,6 +23,7 @@
     - [3.11. Buffers & Timeouts](#311-buffers--timeouts)
   - [4. Performance](#4-performance)
     - [Headers & Expires](#headers--expires)
+    - [Compressed responses with gzip](#compressed-responses-with-gzip)
   - [5. Security](#5-security)
   - [6. Reverse Proxy & Load Balancing](#6-reverse-proxy--load-balancing)
 
@@ -1014,6 +1015,58 @@ http {
     }
 }
 ```
+
+### Compressed responses with gzip
+
+When a client requests a resource, typically a static file
+such as Javascript or CSS, that client can indicate its ability
+to accept compressed data. All modern browsers being capable of this,
+meaning we can compress a response on the server, typically using
+`gzip`. Which drastically reduces its size and as a result reduces
+the time it takes for the client to receive that response.
+
+To configure response compressed
+
+- Enable `gzip` compression: `gzip on;` on the `http context`
+- `gzip_comp_level`: the amount of compression used (3 or 4 be the best options)
+- `gzip_types`: enable `gzip` compression on the specific `mime type`
+  (this is an `array directive` so we can set it multiple times)
+
+![Compression Level](assets/image2.png)
+
+```conf
+events {}
+http {
+    gzip on;
+    gzip_comp_level 3;
+
+    gzip_types text/css;
+    gzip_types text/javascript;
+}
+```
+
+The client still needs to indicate that they're willing to
+accept a compressed response before the compression happen.
+This is where the `Vary` header come into play.
+
+```conf
+location ~* \.(css|js|jpg|png)$ {
+    access_log off;
+    add_header Cache-Control public;
+    add_header Pragma public;
+    add_header Vary Accept-Encoding;
+    expires 10m;
+}
+```
+
+This is now saying on this location block, the response can `vary`
+based on the `Accept-Encoding` header that the client sends
+with the request that variation being `compressed` or `uncompressed`.
+
+To test:
+
+- `curl -I http://localhost:8000/style.css`: raw file (no compression)
+- `curl -I -H "Accept-Encoding: gzip" http://localhost:8000/style.css`: compressed file (the client willing to accept the `gzip` file by adding the `Accept-Encoding: gzip` to its request header)
 
 ## 5. Security
 
