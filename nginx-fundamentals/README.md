@@ -450,6 +450,86 @@ rewrite ^/user/(\w+) /greet/$1 last;
 rewrite /greet/hieu /thumb.jpg;
 ```
 
+### Try Files & Named locations
+
+`try_files` directive
+
+- can be used in `server` context and get applied for all incomming requests
+- can be used inside `location` context and get applied to that `URL` only
+- third kind of rewrite and redirect
+
+`try_files` allows us to have `nginx` engine check for the resource to respond with
+in any number of locations relative to the `root` directory, with the **final argument**
+that results in a `rewrite` and `re-evaluation`, as with the `rewrite` directive.
+
+`try_files path1 path2 final`
+
+```conf
+events {}
+http {
+    server {
+        listen 80;
+        server_name localhost;
+
+        root /sites/demo;
+
+        try_files /thumb.jpg /404.jpg /not-found;
+
+        location /not-found {
+            return 404 "not found";
+        }
+    }
+}
+```
+
+- If we have `/thumb.jpg`, serves it
+- Else if we have `/404.jpg`, serves it
+- Else we `rewrite` the `URL` to `/not-found` and have the `nginx` re-evaluted itself to match
+  the location `/not-found` and respond the text `"not found"` to the client.
+
+Typically, the `try_files` directive is used with `nginx` variable `$uri` to first check
+the file matched the `$uri`
+
+```conf
+events {}
+http {
+    server {
+        listen 80;
+        server_name localhost;
+
+        root /sites/demo;
+
+        try_files $uri /404.jpg /not-found;
+
+        location /not-found {
+            return 404 "not found";
+        }
+    }
+}
+```
+
+Named location simply means assigning a name to a location context, and a directive such
+as `try_files` use that location by its name. Ensuring `no re-evaluation` has to happen
+on the final argument, but instead just a direct call to the `named location`.
+
+```conf
+events {}
+http {
+    server {
+        listen 80;
+        server_name localhost;
+
+        root /sites/demo;
+
+        try_files $uri /404.jpg @not_found;
+
+        location @not_found {
+            return 404 "not found";
+        }
+    }
+}
+```
+
 ## Performance
 
 ## Security
