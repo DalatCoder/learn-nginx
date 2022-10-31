@@ -19,8 +19,8 @@
     - [3.7. Logging](#37-logging)
     - [3.8. Inhteritance & Directive types](#38-inhteritance--directive-types)
     - [3.9. PHP Processing](#39-php-processing)
-    - [Worker Processes](#worker-processes)
-    - [Bufferes & Timeouts](#bufferes--timeouts)
+    - [3.10. Worker Processes](#310-worker-processes)
+    - [3.11. Buffers & Timeouts](#311-buffers--timeouts)
   - [4. Performance](#4-performance)
   - [5. Security](#5-security)
   - [6. Reverse Proxy & Load Balancing](#6-reverse-proxy--load-balancing)
@@ -787,7 +787,7 @@ But FastCGI is faster.
 
 [Learn more](https://www.digitalocean.com/community/tutorials/understanding-and-implementing-fastcgi-proxying-in-nginx)
 
-### Worker Processes
+### 3.10. Worker Processes
 
 When execute the command `ps aux | grep nginx`, we will see 2 processes:
 
@@ -850,7 +850,7 @@ of concurrent requests that our server should be able to accept:
 
 - `worker_process * worker_connections = max connections`.
 
-### Bufferes & Timeouts
+### 3.11. Buffers & Timeouts
 
 Example conf
 
