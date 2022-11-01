@@ -26,6 +26,7 @@
     - [4.2. Compressed responses with gzip](#42-compressed-responses-with-gzip)
     - [4.3. FastCGI Cache (Micro Cache)](#43-fastcgi-cache-micro-cache)
   - [5. Security](#5-security)
+    - [HTTPS (SSL)](#https-ssl)
   - [6. Reverse Proxy & Load Balancing](#6-reverse-proxy--load-balancing)
 
 ## 1. Overview
@@ -67,7 +68,7 @@ Configuration
 
 - Via `docker`
 - `docker pull ubuntu:18.04`
-- `docker run --name ubuntu -p 8000:80 -d ubuntu:18.04`
+- `docker run --name ubuntu -p 8000:80 -p 8001:443 -d ubuntu:18.04`
 - `docker exec -it ubuntu /bin/bash`
 
 - Using docker images with `systemd` enable: [https://hub.docker.com/r/jrei/systemd-ubuntu](https://hub.docker.com/r/jrei/systemd-ubuntu)
@@ -1244,5 +1245,179 @@ http {
 ```
 
 ## 5. Security
+
+### HTTPS (SSL)
+
+Install SSL certificate by generating a self-signed certificate
+and private key.
+
+Store the key and the certificate in the same directory with
+the `nginx.conf` at: `/etc/nginx/ssl/`
+
+- `mkdir /etc/nginx/ssl`
+- generate certificate and key using `openssl` command
+- `openssl req -x509 -days 10 -nodes -newkey rsa:2048 -keyout /etc/nginx/ssl/self.key -out /etc/nginx/ssl/self.crt`
+  - `req`: request to create new self certificate
+  - `-days`: number of days that certificate will be valid
+  - `-newkey`: create new key using `rsa` algorithm with
+    the length of `2048`
+  - `keyout`: path to store the `key`
+  - `out`: path to store the `certificate`
+
+Enable basic `ssl` support in `nginx.conf`
+
+```conf
+events {}
+http {
+    server {
+        listen 443 ssl;
+
+        ssl_certificate /etc/nginx/ssl/self.crt
+        ssl_certificate_key /etc/nginx/ssl/self.key
+    }
+}
+```
+
+Provide some method to handle insecure connection (`HTTP`)
+
+- #1: also listen on port `80`, making our server availble over
+  an insecure connection (not recommend)
+
+- #2: redirect all `HTTP` requests to the equivalent `HTTPS` requests
+
+To redirect all `HTTP` requests to the equivalent `HTTPS` context:
+
+- Add new virtual host `server context`
+- Listen on port `80` (`HTTP`)
+- Same servername
+- `return 301 https://$host$request_uri;` (moved permanently)
+
+```conf
+events {}
+
+http {
+
+    # redirect http requests to https
+    server {
+        listen 80;
+        server_name localhost;
+
+        return 301 https://$host$request_uri;
+    }
+
+    server {
+        listen 443;
+        server_name localhost;
+
+        # ...
+    }
+}
+```
+
+Test by using the `curl` command: `curl -Ik http://localhost`
+
+Improve SSL encryption and make our server more secure
+
+- Disable `SSL protocol`
+
+  - `SSL protocol - Secure Socket Layer` has been outdated
+  - Replaced by `TLS - Transport Layer Security`
+  - `ssl_protocols TLSv1 TLSv1.1 TLSv1.2;`
+  - Set which `cipher suite` should be used by the `TLS` protocol
+    to encrypt our connection
+
+    - `ssl_prefer_server_ciphers on;` - `ssl_ciphers ECDH+AESGCM:ECDH+AES256:ECDH+AES128:DH+3DES:!ADH:!AECDH:!MD5;`
+    - `!` means not using
+
+- Enable `DH Params`
+
+  - `openssl dhparam 2048 -out /etc/nginx/ssl/dhparam.pem`
+  - `ssl_dhparam /etc/nginx/ssl/dhparam.pem`
+
+- Enable `HSTS` (strict transport security)
+
+  - `add_header Strict-Transport-Security "max-age=31536000" always;`
+
+- Enable `SSL sessions` cache
+  - Cache `handshakes` for a set amount of time
+  - Improve SSL connection time
+  - `ssl_session_cache shared:SSL:40m`
+  - The session cache is kept in memory and can be shared by any
+    worker process
+  - `ssl_session_timeout 4h;`
+  - `ssl_session_tickets on;`
+
+The very mosts important parts of fine tuning and optimizing
+`SSL connection`
+
+- Disable SSL (Use TLS only)
+- Optimise Cipher Suits
+- Enable DH Params
+- Enable HSTS
+- Cache SSL Sessions
+
+```conf
+user www-data;
+
+worker_processes auto;
+
+events {
+  worker_connections 1024;
+}
+
+http {
+
+  include mime.types;
+
+  # Redirect all traffic to HTTPS
+  server {
+    listen 80;
+    server_name 127.0.0.1;
+    return 301 https://$host$request_uri;
+  }
+
+  server {
+
+    listen 443 ssl http2;
+    server_name 127.0.0.1;
+
+    root /sites/demo;
+
+    index index.html;
+
+    ssl_certificate /etc/nginx/ssl/self.crt;
+    ssl_certificate_key /etc/nginx/ssl/self.key;
+
+    # Disable SSL
+    ssl_protocols TLSv1 TLSv1.1 TLSv1.2;
+
+    # Optimise cipher suits
+    ssl_prefer_server_ciphers on;
+    ssl_ciphers ECDH+AESGCM:ECDH+AES256:ECDH+AES128:DH+3DES:!ADH:!AECDH:!MD5;
+
+    # Enable DH Params
+    ssl_dhparam /etc/nginx/ssl/dhparam.pem;
+
+    # Enable HSTS
+    add_header Strict-Transport-Security "max-age=31536000" always;
+
+    # SSL sessions
+    ssl_session_cache shared:SSL:40m;
+    ssl_session_timeout 4h;
+    ssl_session_tickets on;
+
+    location / {
+      try_files $uri $uri/ =404;
+    }
+
+    location ~\.php$ {
+      # Pass php requests to the php-fpm service (fastcgi)
+      include fastcgi.conf;
+      fastcgi_pass unix:/run/php/php7.1-fpm.sock;
+    }
+  }
+}
+
+```
 
 ## 6. Reverse Proxy & Load Balancing
